@@ -1,5 +1,6 @@
 #include "reTempMonitor.h"
 #include "rStrings.h"
+#include <string.h>
 
 reTempMonitor::reTempMonitor(float value_min, float value_max, float hysteresis, cb_monitor_outofrange_t cb_status, cb_monitor_publish_t cb_publish)
 {
@@ -110,39 +111,38 @@ void reTempMonitor::paramsRegister(paramsGroupHandle_t root_group, const char* g
 // JSON
 char* reTempMonitor::getJSON()
 {
-  char* ret = nullptr;
-
-  char* timeLow = nullptr;
+  char str_low[CONFIG_FORMAT_STRFTIME_BUFFER_SIZE];
+  memset(&str_low, 0, sizeof(str_low));
   if (_last_low > 0) {
-    timeLow = malloc_timestr(CONFIG_FORMAT_DTM, _last_low);
+    struct tm tm_low;
+    localtime_r(&_last_low, &tm_low);
+    strftime(str_low, sizeof(str_low), CONFIG_FORMAT_DTM, &tm_low);
   } else {
-    timeLow = malloc_string(CONFIG_TEMP_MONITOR_TIME_EMPTY);
+    strcpy(str_low, CONFIG_TEMP_MONITOR_TIME_EMPTY);
   };
 
-  char* timeHigh = nullptr;
+  char str_high[CONFIG_FORMAT_STRFTIME_BUFFER_SIZE];
+  memset(&str_high, 0, sizeof(str_high));
   if (_last_high > 0) {
-    timeHigh = malloc_timestr(CONFIG_FORMAT_DTM, _last_high);
+    struct tm tm_high;
+    localtime_r(&_last_high, &tm_high);
+    strftime(str_high, sizeof(str_high), CONFIG_FORMAT_DTM, &tm_high);
   } else {
-    timeHigh = malloc_string(CONFIG_TEMP_MONITOR_TIME_EMPTY);
+    strcpy(str_high, CONFIG_TEMP_MONITOR_TIME_EMPTY);
   };
 
-  char* timeNorm = nullptr;
+  char str_norm[CONFIG_FORMAT_STRFTIME_BUFFER_SIZE];
+  memset(&str_norm, 0, sizeof(str_norm));
   if (_last_normal > 0) {
-    timeNorm = malloc_timestr(CONFIG_FORMAT_DTM, _last_normal);
+    struct tm tm_norm;
+    localtime_r(&_last_normal, &tm_norm);
+    strftime(str_norm, sizeof(str_norm), CONFIG_FORMAT_DTM, &tm_norm);
   } else {
-    timeNorm = malloc_string(CONFIG_TEMP_MONITOR_TIME_EMPTY);
+    strcpy(str_norm, CONFIG_TEMP_MONITOR_TIME_EMPTY);
   };
 
-  if (timeLow && timeHigh && timeNorm) {
-    ret = malloc_stringf("{\"status\":%d,\"value\":%f,\"last_normal\":\"%s\",\"last_min\":\"%s\",\"last_max\":\"%s\"}", 
-      _status, _last_value, timeNorm, timeLow, timeHigh);
-  };
-
-  if (timeLow) free(timeLow);
-  if (timeHigh) free(timeHigh);
-  if (timeNorm) free(timeNorm);
-
-  return ret;
+  return malloc_stringf("{\"status\":%d,\"value\":%f,\"last_normal\":\"%s\",\"last_min\":\"%s\",\"last_max\":\"%s\"}", 
+    _status, _last_value, str_norm, str_low, str_high);
 }
 
 // MQTT
