@@ -1,8 +1,8 @@
-#include "reTempMonitor.h"
+#include "reRangeMonitor.h"
 #include "rStrings.h"
 #include <string.h>
 
-reTempMonitor::reTempMonitor(float value_min, float value_max, float hysteresis, cb_monitor_outofrange_t cb_status, cb_monitor_publish_t cb_publish)
+reRangeMonitor::reRangeMonitor(float value_min, float value_max, float hysteresis, cb_monitor_outofrange_t cb_status, cb_monitor_publish_t cb_publish)
 {
   _notify      = true;
   _last_low    = 0;
@@ -18,14 +18,14 @@ reTempMonitor::reTempMonitor(float value_min, float value_max, float hysteresis,
   _mqtt_publish = cb_publish; 
 }
 
-reTempMonitor::~reTempMonitor()
+reRangeMonitor::~reRangeMonitor()
 {
   if (_mqtt_topic) free(_mqtt_topic);
   _mqtt_topic = nullptr;
 }
 
 // Monitoring value
-temp_monitor_status_t reTempMonitor::checkValue(float value)
+temp_monitor_status_t reRangeMonitor::checkValue(float value)
 {
   if (value != NAN) {
     _last_value = value;
@@ -64,33 +64,33 @@ temp_monitor_status_t reTempMonitor::checkValue(float value)
 }
 
 // Get current data
-temp_monitor_status_t reTempMonitor::getStatus()
+temp_monitor_status_t reRangeMonitor::getStatus()
 {
   return _status;
 }
 
-void reTempMonitor::setStatusCallback(cb_monitor_outofrange_t cb_status)
+void reRangeMonitor::setStatusCallback(cb_monitor_outofrange_t cb_status)
 {
   _out_of_range = cb_status;
 }
 
-float reTempMonitor::getRangeMin()
+float reRangeMonitor::getRangeMin()
 {
   return _value_min;
 }
 
-float reTempMonitor::getRangeMax()
+float reRangeMonitor::getRangeMax()
 {
   return _value_max;
 }
 
-float reTempMonitor::getHysteresis()
+float reRangeMonitor::getHysteresis()
 {
   return _hysteresis;
 }
 
 // Parameters
-void reTempMonitor::paramsRegister(paramsGroupHandle_t root_group, const char* group_key, const char* group_topic, const char* group_friendly)
+void reRangeMonitor::paramsRegister(paramsGroupHandle_t root_group, const char* group_key, const char* group_topic, const char* group_friendly)
 {
   paramsGroupHandle_t pgParams = paramsRegisterGroup(root_group, group_key, group_topic, group_friendly);
 
@@ -109,7 +109,7 @@ void reTempMonitor::paramsRegister(paramsGroupHandle_t root_group, const char* g
 }
 
 // JSON
-char* reTempMonitor::getJSON()
+char* reRangeMonitor::getJSON()
 {
   char str_low[CONFIG_FORMAT_STRFTIME_BUFFER_SIZE];
   memset(&str_low, 0, sizeof(str_low));
@@ -146,35 +146,35 @@ char* reTempMonitor::getJSON()
 }
 
 // MQTT
-void reTempMonitor::mqttSetCallback(cb_monitor_publish_t cb_publish)
+void reRangeMonitor::mqttSetCallback(cb_monitor_publish_t cb_publish)
 {
   _mqtt_publish = cb_publish; 
 }
 
-char* reTempMonitor::mqttTopicGet()
+char* reRangeMonitor::mqttTopicGet()
 {
   return _mqtt_topic;
 }
 
-bool reTempMonitor::mqttTopicSet(char* topic)
+bool reRangeMonitor::mqttTopicSet(char* topic)
 {
   if (_mqtt_topic) free(_mqtt_topic);
   _mqtt_topic = topic;
   return (_mqtt_topic != nullptr);
 }
 
-bool reTempMonitor::mqttTopicCreate(bool primary, bool local, const char* topic1, const char* topic2, const char* topic3)
+bool reRangeMonitor::mqttTopicCreate(bool primary, bool local, const char* topic1, const char* topic2, const char* topic3)
 {
   return mqttTopicSet(mqttGetTopicDevice(primary, local, topic1, topic2, topic3));
 }
 
-void reTempMonitor::mqttTopicFree()
+void reRangeMonitor::mqttTopicFree()
 {
   if (_mqtt_topic) free(_mqtt_topic);
   _mqtt_topic = nullptr;
 }
 
-bool reTempMonitor::mqttPublish(bool forced)
+bool reRangeMonitor::mqttPublish(bool forced)
 {
   if ((_mqtt_topic) && (_mqtt_publish)) {
     return _mqtt_publish(this, _mqtt_topic, getJSON(), forced, false, true);

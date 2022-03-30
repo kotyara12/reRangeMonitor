@@ -1,15 +1,15 @@
 /* 
-   EN: Module for monitoring and maintaining temperature (or humidity) within specified limits
-   RU: Модуль для мониторинга и поддержания темепературы (или влажности) в заданных пределах
+   EN: Module for monitoring and maintaining values within specified limits
+   RU: Модуль для мониторинга и поддержания значений в заданных пределах
    --------------------------
    (с) 2021 Разживин Александр | Razzhivin Alexander
    kotyara12@yandex.ru | https://kotyara12.ru | tg: @kotyara1971
    --------------------------
-   Страница проекта: https://github.com/kotyara12/reTempMonitor
+   Страница проекта: https://github.com/kotyara12/reRangeMonitor
 */
 
-#ifndef __RE_TEMPMONITOR_H__
-#define __RE_TEMPMONITOR_H__
+#ifndef __RE_RANGE_MONITOR__
+#define __RE_RANGE_MONITOR__
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -30,14 +30,14 @@ typedef enum {
 extern "C" {
 #endif
 
-class reTempMonitor;
-typedef bool (*cb_monitor_publish_t) (reTempMonitor *monitor, char* topic, char* payload, bool forced, bool free_topic, bool free_payload);
-typedef void (*cb_monitor_outofrange_t) (reTempMonitor *monitor, temp_monitor_status_t status, bool notify, float value, float min, float max);
+class reRangeMonitor;
+typedef bool (*cb_monitor_publish_t) (reRangeMonitor *monitor, char* topic, char* payload, bool forced, bool free_topic, bool free_payload);
+typedef void (*cb_monitor_outofrange_t) (reRangeMonitor *monitor, temp_monitor_status_t status, bool notify, float value, float min, float max);
 
-class reTempMonitor {
+class reRangeMonitor {
    public:
-      reTempMonitor(float value_min, float value_max, float hysteresis, cb_monitor_outofrange_t cb_status, cb_monitor_publish_t cb_publish);
-      ~reTempMonitor();
+      reRangeMonitor(float value_min, float value_max, float hysteresis, cb_monitor_outofrange_t cb_status, cb_monitor_publish_t cb_publish);
+      ~reRangeMonitor();
       
       // Monitoring value
       temp_monitor_status_t checkValue(float value);
@@ -83,4 +83,4 @@ class reTempMonitor {
 }
 #endif
 
-#endif // __RE_TEMPMONITOR_H__
+#endif // __RE_RANGE_MONITOR__
