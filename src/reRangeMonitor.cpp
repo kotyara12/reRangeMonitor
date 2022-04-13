@@ -25,7 +25,7 @@ reRangeMonitor::~reRangeMonitor()
 }
 
 // Monitoring value
-temp_monitor_status_t reRangeMonitor::checkValue(float value)
+range_monitor_status_t reRangeMonitor::checkValue(float value)
 {
   if (value != NAN) {
     _last_value = value;
@@ -64,7 +64,7 @@ temp_monitor_status_t reRangeMonitor::checkValue(float value)
 }
 
 // Get current data
-temp_monitor_status_t reRangeMonitor::getStatus()
+range_monitor_status_t reRangeMonitor::getStatus()
 {
   return _status;
 }

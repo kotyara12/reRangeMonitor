@@ -24,7 +24,7 @@ typedef enum {
    TMS_TOO_LOW  = -1,
    TMS_NORMAL   = 0,
    TMS_TOO_HIGH = 1
-} temp_monitor_status_t;
+} range_monitor_status_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,7 +32,7 @@ extern "C" {
 
 class reRangeMonitor;
 typedef bool (*cb_monitor_publish_t) (reRangeMonitor *monitor, char* topic, char* payload, bool forced, bool free_topic, bool free_payload);
-typedef void (*cb_monitor_outofrange_t) (reRangeMonitor *monitor, temp_monitor_status_t status, bool notify, float value, float min, float max);
+typedef void (*cb_monitor_outofrange_t) (reRangeMonitor *monitor, range_monitor_status_t status, bool notify, float value, float min, float max);
 
 class reRangeMonitor {
    public:
@@ -40,10 +40,10 @@ class reRangeMonitor {
       ~reRangeMonitor();
       
       // Monitoring value
-      temp_monitor_status_t checkValue(float value);
+      range_monitor_status_t checkValue(float value);
 
       // Get current data
-      temp_monitor_status_t getStatus();
+      range_monitor_status_t getStatus();
       void  setStatusCallback(cb_monitor_outofrange_t cb_status);
       float getRangeMin();
       float getRangeMax();
@@ -71,7 +71,7 @@ class reRangeMonitor {
       float  _value_min   = 0.0; 
       float  _value_max   = 0.0; 
       float  _hysteresis  = 0.1;
-      temp_monitor_status_t _status = TMS_EMPTY;
+      range_monitor_status_t _status = TMS_EMPTY;
 
       char*  _mqtt_topic  = nullptr;
 
