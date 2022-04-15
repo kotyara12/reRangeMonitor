@@ -36,7 +36,7 @@ typedef void (*cb_monitor_outofrange_t) (reRangeMonitor *monitor, range_monitor_
 
 class reRangeMonitor {
    public:
-      reRangeMonitor(float value_min, float value_max, float hysteresis, cb_monitor_outofrange_t cb_status, cb_monitor_publish_t cb_publish);
+      reRangeMonitor(float value_min, float value_max, float hysteresis, const char* nvs_space, cb_monitor_outofrange_t cb_status, cb_monitor_publish_t cb_publish);
       ~reRangeMonitor();
       
       // Monitoring value
@@ -62,18 +62,23 @@ class reRangeMonitor {
       bool mqttTopicCreate(bool primary, bool local, const char* topic1, const char* topic2, const char* topic3);
       void mqttTopicFree();
       bool mqttPublish(bool forced);
+
+      // NVS
+      void nvsStore(const char* nvs_space);
+      void nvsRestore(const char* nvs_space);
    private:
-      bool   _notify      = true;
-      time_t _last_low    = 0;
-      time_t _last_high   = 0;
-      time_t _last_normal = 0;
-      float  _last_value  = NAN;
-      float  _value_min   = 0.0; 
-      float  _value_max   = 0.0; 
-      float  _hysteresis  = 0.1;
+      bool   _notify         = true;
+      time_t _last_low       = 0;
+      time_t _last_high      = 0;
+      time_t _last_normal    = 0;
+      float  _last_value     = NAN;
+      float  _value_min      = 0.0; 
+      float  _value_max      = 0.0; 
+      float  _hysteresis     = 0.1;
       range_monitor_status_t _status = TMS_EMPTY;
 
-      char*  _mqtt_topic  = nullptr;
+      char*  _mqtt_topic     = nullptr;
+      const char* _nvs_space = nullptr;
 
       cb_monitor_outofrange_t _out_of_range = nullptr;
       cb_monitor_publish_t    _mqtt_publish = nullptr; 

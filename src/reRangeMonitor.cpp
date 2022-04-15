@@ -1,8 +1,10 @@
 #include "reRangeMonitor.h"
+#include "reNvs.h"
+#include "reEsp32.h"
 #include "rStrings.h"
 #include <string.h>
 
-reRangeMonitor::reRangeMonitor(float value_min, float value_max, float hysteresis, cb_monitor_outofrange_t cb_status, cb_monitor_publish_t cb_publish)
+reRangeMonitor::reRangeMonitor(float value_min, float value_max, float hysteresis, const char* nvs_space, cb_monitor_outofrange_t cb_status, cb_monitor_publish_t cb_publish)
 {
   _notify      = true;
   _last_low    = 0;
@@ -14,8 +16,13 @@ reRangeMonitor::reRangeMonitor(float value_min, float value_max, float hysteresi
   _hysteresis  = hysteresis;
   _status = TMS_EMPTY;
   _mqtt_topic  = nullptr;
+  _nvs_space   = nvs_space;
   _out_of_range = cb_status;
   _mqtt_publish = cb_publish; 
+
+  if (_nvs_space) {
+    nvsRestore(_nvs_space);
+  };
 }
 
 reRangeMonitor::~reRangeMonitor()
@@ -33,6 +40,7 @@ range_monitor_status_t reRangeMonitor::checkValue(float value)
       if (value < _value_min) {
         _status = TMS_TOO_LOW;
         _last_low = time(nullptr);
+        if (_nvs_space) { nvsStore(_nvs_space); };
         mqttPublish(true);
         if (_out_of_range) {
           _out_of_range(this, _status, _notify, value, _value_min, _value_max);
@@ -40,6 +48,7 @@ range_monitor_status_t reRangeMonitor::checkValue(float value)
       } else if (value > _value_max) {
         _status = TMS_TOO_HIGH;
         _last_high = time(nullptr);
+        if (_nvs_space) { nvsStore(_nvs_space); };
         mqttPublish(true);
         if (_out_of_range) {
           _out_of_range(this, _status, _notify, value, _value_min, _value_max);
@@ -47,12 +56,14 @@ range_monitor_status_t reRangeMonitor::checkValue(float value)
       } else if (_status == TMS_EMPTY) {
         _status = TMS_NORMAL;
         _last_normal = time(nullptr);
+        if (_nvs_space) { nvsStore(_nvs_space); };
         mqttPublish(true);
       };
     } else {
       if ((value >= (_value_min + _hysteresis)) && (value <= (_value_max - _hysteresis))) {
         _status = TMS_NORMAL;
         _last_normal = time(nullptr);
+        if (_nvs_space) { nvsStore(_nvs_space); };
         mqttPublish(true);
         if (_out_of_range) {
           _out_of_range(this, _status, _notify, value, _value_min, _value_max);
@@ -95,16 +106,16 @@ void reRangeMonitor::paramsRegister(paramsGroupHandle_t root_group, const char* 
   paramsGroupHandle_t pgParams = paramsRegisterGroup(root_group, group_key, group_topic, group_friendly);
 
   paramsRegisterValue(OPT_KIND_PARAMETER, OPT_TYPE_U8, nullptr, pgParams,
-    CONFIG_TEMP_MONITOR_NOTIFY_KEY, CONFIG_TEMP_MONITOR_NOTIFY_FRIENDLY,
+    CONFIG_RANGE_MONITOR_NOTIFY_KEY, CONFIG_RANGE_MONITOR_NOTIFY_FRIENDLY,
     CONFIG_MQTT_PARAMS_QOS, (void*)&_notify);
   paramsRegisterValue(OPT_KIND_PARAMETER, OPT_TYPE_FLOAT, nullptr, pgParams,
-    CONFIG_TEMP_MONITOR_MIN_KEY, CONFIG_TEMP_MONITOR_MIN_FRIENDLY,
+    CONFIG_RANGE_MONITOR_MIN_KEY, CONFIG_RANGE_MONITOR_MIN_FRIENDLY,
     CONFIG_MQTT_PARAMS_QOS, (void*)&_value_min);
   paramsRegisterValue(OPT_KIND_PARAMETER, OPT_TYPE_FLOAT, nullptr, pgParams,
-    CONFIG_TEMP_MONITOR_MAX_KEY, CONFIG_TEMP_MONITOR_MAX_FRIENDLY,
+    CONFIG_RANGE_MONITOR_MAX_KEY, CONFIG_RANGE_MONITOR_MAX_FRIENDLY,
     CONFIG_MQTT_PARAMS_QOS, (void*)&_value_max);
   paramsRegisterValue(OPT_KIND_PARAMETER, OPT_TYPE_FLOAT, nullptr, pgParams,
-    CONFIG_TEMP_MONITOR_HYST_KEY, CONFIG_TEMP_MONITOR_HYST_FRIENDLY,
+    CONFIG_RANGE_MONITOR_HYST_KEY, CONFIG_RANGE_MONITOR_HYST_FRIENDLY,
     CONFIG_MQTT_PARAMS_QOS, (void*)&_hysteresis);
 }
 
@@ -118,7 +129,7 @@ char* reRangeMonitor::getJSON()
     localtime_r(&_last_low, &tm_low);
     strftime(str_low, sizeof(str_low), CONFIG_FORMAT_DTM, &tm_low);
   } else {
-    strcpy(str_low, CONFIG_TEMP_MONITOR_TIME_EMPTY);
+    strcpy(str_low, CONFIG_RANGE_MONITOR_TIME_EMPTY);
   };
 
   char str_high[CONFIG_FORMAT_STRFTIME_BUFFER_SIZE];
@@ -128,7 +139,7 @@ char* reRangeMonitor::getJSON()
     localtime_r(&_last_high, &tm_high);
     strftime(str_high, sizeof(str_high), CONFIG_FORMAT_DTM, &tm_high);
   } else {
-    strcpy(str_high, CONFIG_TEMP_MONITOR_TIME_EMPTY);
+    strcpy(str_high, CONFIG_RANGE_MONITOR_TIME_EMPTY);
   };
 
   char str_norm[CONFIG_FORMAT_STRFTIME_BUFFER_SIZE];
@@ -138,7 +149,7 @@ char* reRangeMonitor::getJSON()
     localtime_r(&_last_normal, &tm_norm);
     strftime(str_norm, sizeof(str_norm), CONFIG_FORMAT_DTM, &tm_norm);
   } else {
-    strcpy(str_norm, CONFIG_TEMP_MONITOR_TIME_EMPTY);
+    strcpy(str_norm, CONFIG_RANGE_MONITOR_TIME_EMPTY);
   };
 
   return malloc_stringf("{\"status\":%d,\"value\":%f,\"last_normal\":\"%s\",\"last_min\":\"%s\",\"last_max\":\"%s\"}", 
@@ -181,3 +192,30 @@ bool reRangeMonitor::mqttPublish(bool forced)
   };
   return false;
 }
+
+// NVS
+void reRangeMonitor::nvsStore(const char* nvs_space)
+{
+  nvs_handle_t nvs_handle;
+  if (nvsOpen(nvs_space, NVS_READWRITE, &nvs_handle)) {
+    nvs_set_u8(nvs_handle, CONFIG_RANGE_MONITOR_STATUS, (uint8_t)_status);
+    nvs_set_i64(nvs_handle, CONFIG_RANGE_MONITOR_LAST_NORMAL, (int64_t)_last_normal);
+    nvs_set_i64(nvs_handle, CONFIG_RANGE_MONITOR_LAST_LOW, (int64_t)_last_low);
+    nvs_set_i64(nvs_handle, CONFIG_RANGE_MONITOR_LAST_HIGH, (int64_t)_last_high);
+    nvs_commit(nvs_handle);
+    nvs_close(nvs_handle);
+  };
+}
+
+void reRangeMonitor::nvsRestore(const char* nvs_space)
+{
+  nvs_handle_t nvs_handle;
+  if (nvsOpen(nvs_space, NVS_READONLY, &nvs_handle)) {
+    nvs_get_u8(nvs_handle, CONFIG_RANGE_MONITOR_STATUS, (uint8_t*)&_status);
+    nvs_get_i64(nvs_handle, CONFIG_RANGE_MONITOR_LAST_NORMAL, (int64_t*)&_last_normal);
+    nvs_get_i64(nvs_handle, CONFIG_RANGE_MONITOR_LAST_LOW, (int64_t*)&_last_low);
+    nvs_get_i64(nvs_handle, CONFIG_RANGE_MONITOR_LAST_HIGH, (int64_t*)&_last_high);
+    nvs_close(nvs_handle);
+  };
+}
+
