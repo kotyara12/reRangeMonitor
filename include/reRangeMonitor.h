@@ -66,6 +66,7 @@ class reRangeMonitor {
       // NVS
       void nvsStore(const char* nvs_space);
       void nvsRestore(const char* nvs_space);
+      void nvsRestore();
    private:
       bool   _notify         = true;
       time_t _last_low       = 0;

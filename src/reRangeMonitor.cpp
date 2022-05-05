@@ -19,10 +19,6 @@ reRangeMonitor::reRangeMonitor(float value_min, float value_max, float hysteresi
   _nvs_space   = nvs_space;
   _out_of_range = cb_status;
   _mqtt_publish = cb_publish; 
-
-  if (_nvs_space) {
-    nvsRestore(_nvs_space);
-  };
 }
 
 reRangeMonitor::~reRangeMonitor()
@@ -219,3 +215,9 @@ void reRangeMonitor::nvsRestore(const char* nvs_space)
   };
 }
 
+void reRangeMonitor::nvsRestore()
+{
+  if (_nvs_space) { 
+    nvsRestore(_nvs_space); 
+  };
+}
