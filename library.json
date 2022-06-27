@@ -1,0 +1,16 @@
+{
+  "name": "reRangeMonitor",
+  "version": "1.0.0",
+  "description": "Module for monitoring and maintaining values within specified limits",
+  "authors":
+  [
+    {
+      "name": "Alexander Razzhivin",
+      "email": "kotyara12@yandex.ru",
+      "url": "https://kotyara12.ru"
+    }
+  ],
+  "license": "MIT",
+  "frameworks": ["arduino", "espidf"],
+  "platforms": ["espressif32"]
+}

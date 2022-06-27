@@ -2,7 +2,7 @@
    EN: Module for monitoring and maintaining values within specified limits
    RU: Модуль для мониторинга и поддержания значений в заданных пределах
    --------------------------
-   (с) 2021 Разживин Александр | Razzhivin Alexander
+   (с) 2021-2022 Разживин Александр | Razzhivin Alexander
    kotyara12@yandex.ru | https://kotyara12.ru | tg: @kotyara1971
    --------------------------
    Страница проекта: https://github.com/kotyara12/reRangeMonitor
@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 class reRangeMonitor;
-typedef bool (*cb_monitor_publish_t) (reRangeMonitor *monitor, char* topic, char* payload, bool forced, bool free_topic, bool free_payload);
+typedef bool (*cb_monitor_publish_t) (reRangeMonitor *monitor, char* topic, char* payload, bool free_topic, bool free_payload);
 typedef void (*cb_monitor_outofrange_t) (reRangeMonitor *monitor, range_monitor_status_t status, bool notify, float value, float min, float max);
 
 class reRangeMonitor {
@@ -61,7 +61,7 @@ class reRangeMonitor {
       bool mqttTopicSet(char* topic);
       bool mqttTopicCreate(bool primary, bool local, const char* topic1, const char* topic2, const char* topic3);
       void mqttTopicFree();
-      bool mqttPublish(bool forced);
+      bool mqttPublish();
 
       // NVS
       void nvsStore(const char* nvs_space);

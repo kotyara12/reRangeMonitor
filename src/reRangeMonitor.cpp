@@ -37,7 +37,7 @@ range_monitor_status_t reRangeMonitor::checkValue(float value)
         _status = TMS_TOO_LOW;
         _last_low = time(nullptr);
         if (_nvs_space) { nvsStore(_nvs_space); };
-        mqttPublish(true);
+        mqttPublish();
         if (_out_of_range) {
           _out_of_range(this, _status, _notify, value, _value_min, _value_max);
         };
@@ -45,7 +45,7 @@ range_monitor_status_t reRangeMonitor::checkValue(float value)
         _status = TMS_TOO_HIGH;
         _last_high = time(nullptr);
         if (_nvs_space) { nvsStore(_nvs_space); };
-        mqttPublish(true);
+        mqttPublish();
         if (_out_of_range) {
           _out_of_range(this, _status, _notify, value, _value_min, _value_max);
         };
@@ -53,14 +53,14 @@ range_monitor_status_t reRangeMonitor::checkValue(float value)
         _status = TMS_NORMAL;
         _last_normal = time(nullptr);
         if (_nvs_space) { nvsStore(_nvs_space); };
-        mqttPublish(true);
+        mqttPublish();
       };
     } else {
       if ((value >= (_value_min + _hysteresis)) && (value <= (_value_max - _hysteresis))) {
         _status = TMS_NORMAL;
         _last_normal = time(nullptr);
         if (_nvs_space) { nvsStore(_nvs_space); };
-        mqttPublish(true);
+        mqttPublish();
         if (_out_of_range) {
           _out_of_range(this, _status, _notify, value, _value_min, _value_max);
         };
@@ -181,10 +181,10 @@ void reRangeMonitor::mqttTopicFree()
   _mqtt_topic = nullptr;
 }
 
-bool reRangeMonitor::mqttPublish(bool forced)
+bool reRangeMonitor::mqttPublish()
 {
   if ((_mqtt_topic) && (_mqtt_publish)) {
-    return _mqtt_publish(this, _mqtt_topic, getJSON(), forced, false, true);
+    return _mqtt_publish(this, _mqtt_topic, getJSON(), false, true);
   };
   return false;
 }
@@ -192,32 +192,38 @@ bool reRangeMonitor::mqttPublish(bool forced)
 // NVS
 void reRangeMonitor::nvsStore(const char* nvs_space)
 {
-  nvs_handle_t nvs_handle;
-  if (nvsOpen(nvs_space, NVS_READWRITE, &nvs_handle)) {
-    nvs_set_u8(nvs_handle, CONFIG_RANGE_MONITOR_STATUS, (uint8_t)_status);
-    nvs_set_i64(nvs_handle, CONFIG_RANGE_MONITOR_LAST_NORMAL, (int64_t)_last_normal);
-    nvs_set_i64(nvs_handle, CONFIG_RANGE_MONITOR_LAST_LOW, (int64_t)_last_low);
-    nvs_set_i64(nvs_handle, CONFIG_RANGE_MONITOR_LAST_HIGH, (int64_t)_last_high);
-    nvs_commit(nvs_handle);
-    nvs_close(nvs_handle);
+  if ((nvs_space != nullptr) && (_status != TMS_EMPTY)) {
+    nvs_handle_t nvs_handle;
+    if (nvsOpen(nvs_space, NVS_READWRITE, &nvs_handle)) {
+      nvs_set_i8(nvs_handle, CONFIG_RANGE_MONITOR_STATUS, (int8_t)_status);
+      nvs_set_time(nvs_handle, CONFIG_RANGE_MONITOR_LAST_NORMAL, _last_normal);
+      nvs_set_time(nvs_handle, CONFIG_RANGE_MONITOR_LAST_LOW, _last_low);
+      nvs_set_time(nvs_handle, CONFIG_RANGE_MONITOR_LAST_HIGH, _last_high);
+      nvs_commit(nvs_handle);
+      nvs_close(nvs_handle);
+    };
   };
 }
 
 void reRangeMonitor::nvsRestore(const char* nvs_space)
 {
-  nvs_handle_t nvs_handle;
-  if (nvsOpen(nvs_space, NVS_READONLY, &nvs_handle)) {
-    nvs_get_u8(nvs_handle, CONFIG_RANGE_MONITOR_STATUS, (uint8_t*)&_status);
-    nvs_get_i64(nvs_handle, CONFIG_RANGE_MONITOR_LAST_NORMAL, (int64_t*)&_last_normal);
-    nvs_get_i64(nvs_handle, CONFIG_RANGE_MONITOR_LAST_LOW, (int64_t*)&_last_low);
-    nvs_get_i64(nvs_handle, CONFIG_RANGE_MONITOR_LAST_HIGH, (int64_t*)&_last_high);
-    nvs_close(nvs_handle);
+  if (nvs_space != nullptr) {
+    nvs_handle_t nvs_handle;
+    if (nvsOpen(nvs_space, NVS_READONLY, &nvs_handle)) {
+      int8_t buf = (int8_t)_status;
+      nvs_get_i8(nvs_handle, CONFIG_RANGE_MONITOR_STATUS, &buf);
+      if ((buf >= TMS_TOO_LOW) && (buf <= TMS_TOO_HIGH)) {
+        _status = (range_monitor_status_t)buf;
+        nvs_get_time(nvs_handle, CONFIG_RANGE_MONITOR_LAST_NORMAL, &_last_normal);
+        nvs_get_time(nvs_handle, CONFIG_RANGE_MONITOR_LAST_LOW, &_last_low);
+        nvs_get_time(nvs_handle, CONFIG_RANGE_MONITOR_LAST_HIGH, &_last_high);
+      };
+      nvs_close(nvs_handle);
+    };
   };
 }
 
 void reRangeMonitor::nvsRestore()
 {
-  if (_nvs_space) { 
-    nvsRestore(_nvs_space); 
-  };
+  nvsRestore(_nvs_space); 
 }
