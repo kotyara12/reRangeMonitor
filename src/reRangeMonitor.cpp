@@ -118,38 +118,16 @@ void reRangeMonitor::paramsRegister(paramsGroupHandle_t root_group, const char* 
 // JSON
 char* reRangeMonitor::getJSON()
 {
-  char str_low[CONFIG_FORMAT_STRFTIME_BUFFER_SIZE];
-  memset(&str_low, 0, sizeof(str_low));
-  if (_last_low > 0) {
-    struct tm tm_low;
-    localtime_r(&_last_low, &tm_low);
-    strftime(str_low, sizeof(str_low), CONFIG_FORMAT_DTM, &tm_low);
-  } else {
-    strcpy(str_low, CONFIG_RANGE_MONITOR_TIME_EMPTY);
-  };
+  char str_low[CONFIG_RANGE_MONITOR_TIMESTAMP_BUF_SIZE];
+  char str_high[CONFIG_RANGE_MONITOR_TIMESTAMP_BUF_SIZE];
+  char str_normal[CONFIG_RANGE_MONITOR_TIMESTAMP_BUF_SIZE];
 
-  char str_high[CONFIG_FORMAT_STRFTIME_BUFFER_SIZE];
-  memset(&str_high, 0, sizeof(str_high));
-  if (_last_high > 0) {
-    struct tm tm_high;
-    localtime_r(&_last_high, &tm_high);
-    strftime(str_high, sizeof(str_high), CONFIG_FORMAT_DTM, &tm_high);
-  } else {
-    strcpy(str_high, CONFIG_RANGE_MONITOR_TIME_EMPTY);
-  };
-
-  char str_norm[CONFIG_FORMAT_STRFTIME_BUFFER_SIZE];
-  memset(&str_norm, 0, sizeof(str_norm));
-  if (_last_normal > 0) {
-    struct tm tm_norm;
-    localtime_r(&_last_normal, &tm_norm);
-    strftime(str_norm, sizeof(str_norm), CONFIG_FORMAT_DTM, &tm_norm);
-  } else {
-    strcpy(str_norm, CONFIG_RANGE_MONITOR_TIME_EMPTY);
-  };
+  time2str_empty(CONFIG_RANGE_MONITOR_TIMESTAMP_FORMAT, &_last_low, &str_low[0], sizeof(str_low));
+  time2str_empty(CONFIG_RANGE_MONITOR_TIMESTAMP_FORMAT, &_last_high, &str_high[0], sizeof(str_high));
+  time2str_empty(CONFIG_RANGE_MONITOR_TIMESTAMP_FORMAT, &_last_normal, &str_normal[0], sizeof(str_normal));
 
   return malloc_stringf("{\"status\":%d,\"value\":%f,\"last_normal\":\"%s\",\"last_min\":\"%s\",\"last_max\":\"%s\"}", 
-    _status, _last_value, str_norm, str_low, str_high);
+    _status, _last_value, str_normal, str_low, str_high);
 }
 
 // MQTT
