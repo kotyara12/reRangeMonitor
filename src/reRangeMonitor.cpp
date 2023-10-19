@@ -14,7 +14,7 @@ reRangeMonitor::reRangeMonitor(float value_min, float value_max, float hysteresi
   _value_min   = value_min; 
   _value_max   = value_max; 
   _hysteresis  = hysteresis;
-  _status = TMS_EMPTY;
+  _status      = TMS_EMPTY;
   _mqtt_topic  = nullptr;
   _nvs_space   = nvs_space;
   _out_of_range = cb_status;
